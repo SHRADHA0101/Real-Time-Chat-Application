@@ -1,0 +1,255 @@
+<%- include('./partials/header') %>
+  <div class="whatsapp-layout">
+
+    <div class="left-sidebar">
+      <div class="Search-user">
+        <div class="search-box">
+          <input type="text" id="search-user" placeholder="Search a username">
+          <button id="search-btn">
+            <i class="fa fa-search"></i>
+          </button>
+          <a href="/showprofile" class="profile">
+            <i class="fa-regular fa-user user"></i>
+          </a>
+          <a href="/logout" class="logout">Logout</a>
+
+        </div>
+      </div>
+
+      <div class="user-list">
+        <% users.forEach(function(user) { %>
+          <div class="user-card" data-user-id="<%= user._id %>" >
+            <img src="/uploads/<%= user.dp %>" alt="" />
+
+            <div class="user-details">
+              <h2>
+                <%= user.username %>
+              </h2>
+            </div>
+          </div>
+          <hr>
+          <% }); %>
+      </div>
+    </div>
+    <hr>
+    <!-- Right Sidebar: Chat Box -->
+    <div class="right-sidebar">
+      <h1 id="chat-heading">Chat-Dictive </h1>
+
+      <div class="messages">
+
+      </div>
+      <div class="input">
+      <input type="text" id="message-input" placeholder="Enter Message" class="animate__animated animate__bounceInLeft">
+<button class="paper-plane" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+<button class="button-86" role="button" onclick="joinRoom()">Join Room</button>
+
+        <button class="button-60" role="button" onclick="createRoom()">
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+          <span class="text">Create Your Room</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</script>
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- ... Your existing HTML code ... -->
+  <script>
+    const searchBtn = document.querySelector('#search-btn');
+    const searchUser = document.querySelector('#search-user');
+    const userCards = document.querySelectorAll('.user-card');
+    const chatHeading = document.querySelector('#chat-heading');
+    const messageInput = document.querySelector('#message-input');
+    const joinRoomBtn = document.querySelector('#joinRoom');
+    let roomName = '';
+    let password
+    searchBtn.addEventListener('click', () => {
+      const searchQuery = searchUser.value.toLowerCase();
+      userCards.forEach(userCard => {
+        const name = userCard.querySelector('h2').innerText.toLowerCase();
+        if (name.includes(searchQuery)) {
+          userCard.style.display = 'flex';
+          userCard.nextElementSibling.style.display = 'flex'; 
+        } else {
+          userCard.style.display = 'none';
+          userCard.nextElementSibling.style.display = 'none';
+        }
+      });
+    });
+ 
+
+    const socket = io();
+
+// var pvtChatRoom,pvtPass
+//     userCards.forEach(userCard => {
+//   userCard.addEventListener('click', () => {
+//     const selectedUserId = userCard.getAttribute('data-user-id'); 
+//     const current = JSON.parse(user); 
+//     const currentUserId = current._id;
+    
+//     // Generate a consistent room ID by sorting the user IDs.
+//     const roomParticipants = [currentUserId, selectedUserId].sort().join('_');
+//     const roomName = `private_${roomParticipants}`;
+
+//     chatHeading.innerHTML = `Private Chat with ${userCard.querySelector('h2').innerText}`;
+//     password = ''; // You can set a password here if needed.
+//     var pvtRoom = {
+//       roomName: roomName,
+//       password: password
+//     };
+//     pvtChatRoom=pvtRoom.roomName
+//     pvtPass=pvtRoom.password
+//     console.log("Data", pvtChatRoom);
+   
+//   });
+// });
+
+    function incomingMessage(messagePacket) {
+      document.querySelector('.messages').innerHTML += ` <div class="msg incomingMessage">
+          <div class="username">${messagePacket.username}</div>
+          <div class="data"> ${messagePacket.msg} </div>
+          <sub class="time" >${messagePacket.time}</sub>
+        </div>`
+    }
+    const now = new Date();
+const hours = now.getHours().toString().padStart(2, '0'); // Ensure two digits
+const minutes = now.getMinutes().toString().padStart(2, '0'); // Ensure two digits
+    function outgoingMessage(msg,messagePacket) {
+      document.querySelector('.messages').innerHTML += ` <div class="msg outgoingMessage">
+          <div class="username">You</div>
+          <div class="data"> ${msg} </div>
+          <sub class="time" > ${messagePacket.time}</sub>
+        </div>`
+
+    }
+    const user = '<%- JSON.stringify(currentuser) %>';
+    console.log('User object:', user);
+    const curr = user;
+    const currentUserObj = JSON.parse(user);
+    console.log(currentUserObj)
+    function sendMessage() {
+      const username = currentUserObj.username;
+    console.log('Username:', username);
+    const msg = document.querySelector('#message-input').value;
+
+    // Calculate the current time when sending the message
+    const now = new Date();
+    const hours = now.getHours().toString().padStart(2, '0'); // Ensure two digits
+    const minutes = now.getMinutes().toString().padStart(2, '0'); // Ensure two digits
+
+    const messagePacket = {
+        username: username,
+        msg: msg,
+        roomName: roomName,
+        password: password,
+        time: `${hours}:${minutes}`
+    }
+if(curr){
+    outgoingMessage(msg, messagePacket); // Display the message
+
+    // Clear the input field or perform any other necessary actions
+    document.querySelector('#message-input').value = '';
+      socket.emit('sony', messagePacket)
+      }
+
+    }
+    socket.on('max', msg => {
+      incomingMessage(msg)
+    })
+
+   
+
+    function joinRoom() {
+       roomName = prompt('Enter room name');
+       password = prompt('Enter password');
+
+      const data = {
+        username:currpacket.username,
+        roomName: roomName,
+        password: password
+      };
+
+      socket.emit('joinRoom', data);
+    }
+
+    function createRoom() {
+       roomName = prompt('Enter room name');
+       password = prompt('Enter password');
+
+      const data = {
+        roomName: roomName,
+        password: password
+      };
+
+      socket.emit('createRoom', data);
+    }
+    // Delete current room
+  
+    // Handle server responses
+    socket.on('roomCreated', (roomName) => {
+      chatHeading.innerHTML = `You Created ${roomName}`;
+
+      alert(`Room '${roomName}' created.`);
+    });
+    socket.on('roomDeleted', (roomName) => {
+      alert(`Room '${roomName}' deleted.`);
+    });
+    const currjoinedname = currentUserObj.username;
+  // Tell the other users who joined the room
+  const currpacket = {
+        username: currjoinedname,
+        roomName: roomName,
+        password: password,
+        time:`${hours}:${minutes}`,
+      }
+      socket.on('userJoinedMsg', (data) => {
+    document.querySelector('.messages').innerHTML += `
+        <div class="msg incomingMessage">
+            <div class="username">${data.username} Joined the room</div>
+          <sub class='time'>${currpacket.time}<sub>
+        </div>
+    `;
+   
+});
+
+  // socket.on('userLeftRoom',(data)=>{
+  //   const currjoined = JSON.parse(user);
+  //     const currjoinedname = currentUserObj.name;
+  //     console.log('Username:', currjoinedname);
+  //     const msg = document.querySelector('#message-input').value
+  //     const currpacket = {
+  //       username: currjoinedname,
+  //       roomName: roomName,
+  //       password: password,
+  //       time:`${hours}:${minutes}`,
+  //     }
+
+  //   document.querySelector('.messages').innerHTML += ` <div class="msg incomingMessage">
+  //         <div class="username">${currpacket.username} Left the room</div>`
+  //         console.log(currpacket)
+  // })
+    socket.on('roomExists', (roomName) => {
+      alert(`Room '${roomName}' already exists.`);
+    });
+
+    socket.on('roomNotFound', (roomName) => {
+     alert(`Room '${roomName}' not found or wrong password.`);
+    });
+
+    socket.on('roomJoined', (roomName) => {
+      chatHeading.innerHTML = `You Joined ${roomName}`;
+      alert(`Joined room '${roomName}'.`);
+    });
+
+
+    // Disconnect
+    socket.on('disconnect', () => {
+      console.log('Disconnected from the server');
+
+    });
+  </script>
+
+<%- include('./partials/footer') %>
